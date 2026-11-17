@@ -30,7 +30,10 @@ Le stock baisse automatiquement à chaque commande, et une commande qui dépasse
    (`SUPABASE_SERVICE_ROLE_KEY`, à garder secrète). Elles servent à l'envoi des photos.
 
 ### 2. Créer les tables
-Sur ton ordinateur (avec Node.js installé) :
+**Le plus simple** : dans Supabase, ouvre **SQL Editor → New query**, colle tout le contenu du fichier
+[`db/supabase-setup.sql`](db/supabase-setup.sql) et clique sur **Run**.
+
+**Ou**, sur ton ordinateur (avec Node.js installé) :
 ```bash
 npm install
 cp .env.example .env.local   # puis remplis DATABASE_URL dans .env.local
