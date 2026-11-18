@@ -8,6 +8,7 @@ import { saveProduct } from "../actions";
 export function ProductForm({ product, uploads }: { product?: Product; uploads: boolean }) {
   const [error, action, pending] = useActionState(saveProduct, null);
   const [preview, setPreview] = useState(product?.image_url ?? "");
+  const [fileName, setFileName] = useState("");
 
   return (
     <form action={action} className="space-y-5">
@@ -69,19 +70,24 @@ export function ProductForm({ product, uploads }: { product?: Product; uploads: 
           </div>
           <div className="min-w-60 flex-1 space-y-3">
             {uploads && (
-              <label className="block">
-                <span className="label">📷 Envoyer une photo (JPG, PNG, WebP · 4 Mo max)</span>
-                <input
-                  name="image"
-                  type="file"
-                  accept="image/jpeg,image/png,image/webp,image/avif"
-                  className="block w-full cursor-pointer text-sm text-gray-600 file:me-3 file:cursor-pointer file:rounded-xl file:border-0 file:bg-brand-600 file:px-4 file:py-2.5 file:font-semibold file:text-white hover:file:bg-brand-700"
-                  onChange={(e) => {
-                    const f = e.target.files?.[0];
-                    if (f) setPreview(URL.createObjectURL(f));
-                  }}
-                />
-              </label>
+              <div className="space-y-1.5">
+                <label className="btn-primary cursor-pointer px-6 py-3">
+                  📷 {fileName ? "Changer de photo" : "Choisir une photo"}
+                  <input
+                    name="image"
+                    type="file"
+                    accept="image/jpeg,image/png,image/webp,image/avif"
+                    className="sr-only"
+                    onChange={(e) => {
+                      const f = e.target.files?.[0];
+                      if (!f) return;
+                      setFileName(f.name);
+                      setPreview(URL.createObjectURL(f));
+                    }}
+                  />
+                </label>
+                <p className="text-sm text-gray-500">{fileName || "JPG, PNG ou WebP · 4 Mo maximum"}</p>
+              </div>
             )}
             <label className="block">
               <span className="label">{uploads ? "… ou coller un lien d'image" : "Lien de l'image (https://…)"}</span>
