@@ -109,9 +109,19 @@ async function testStorage(): Promise<Check[]> {
     if (error) {
       return [urlCheck, { label: "Stockage des photos", ok: false, detail: `${error.message} → vérifie la clé secrète (secret / service_role, pas anon) et relance db/supabase-setup.sql.` }];
     }
-    return [urlCheck, { label: "Stockage des photos", ok: Boolean(data?.public), detail: data?.public ? "Bucket « produits » OK" : "Le bucket « produits » n'est pas public." }];
+    const bucket: Check = { label: "Bucket « produits »", ok: Boolean(data?.public), detail: data?.public ? "OK" : "Le bucket n'est pas public." };
+    // Envoi réel d'une petite image puis suppression.
+    const png = Buffer.from(
+      "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==",
+      "base64",
+    );
+    const path = `diagnostic/test-${Date.now()}.png`;
+    const up = await supabase.storage.from("produits").upload(path, png, { contentType: "image/png" });
+    if (up.error) return [urlCheck, bucket, { label: "Envoi test", ok: false, detail: up.error.message }];
+    await supabase.storage.from("produits").remove([path]);
+    return [urlCheck, bucket, { label: "Envoi test", ok: true, detail: "Une image test a été envoyée puis supprimée." }];
   } catch (e) {
-    return [{ label: "Stockage des photos", ok: false, detail: (e as Error).message }];
+    return [urlCheck, { label: "Stockage des photos", ok: false, detail: (e as Error).message }];
   }
 }
 

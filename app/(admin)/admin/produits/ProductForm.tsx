@@ -1,5 +1,6 @@
 "use client";
 
+import { useRouter } from "next/navigation";
 import { useActionState, useState } from "react";
 import { CATEGORIES } from "@/lib/i18n";
 import type { Product } from "@/lib/types";
@@ -7,7 +8,26 @@ import { resizeImage } from "@/lib/resizeImage";
 import { saveProduct } from "../actions";
 
 export function ProductForm({ product, uploads }: { product?: Product; uploads: boolean }) {
-  const [error, action, pending] = useActionState(saveProduct, null);
+  const router = useRouter();
+  const [error, action, pending] = useActionState(async (prev: string | null, form: FormData) => {
+    const file = form.get("image");
+    if (file instanceof File && file.size > 3.5 * 1024 * 1024) {
+      return `Photo trop lourde (${(file.size / 1024 / 1024).toFixed(1)} Mo) : choisis une image plus petite ou fais-en une capture d'écran.`;
+    }
+    try {
+      const res = await saveProduct(prev, form);
+      if (res === "ok") {
+        router.push("/admin/produits");
+        router.refresh();
+        return null;
+      }
+      return res;
+    } catch (e) {
+      // Session expirée : laisser Next.js rediriger vers la connexion.
+      if (String((e as { digest?: string })?.digest ?? "").startsWith("NEXT_REDIRECT")) throw e;
+      return `Erreur pendant l'envoi : ${(e as Error)?.message || String(e)}. Vérifie ta connexion et réessaie ; si ça continue, envoie une capture de ce message.`;
+    }
+  }, null);
   const [preview, setPreview] = useState(product?.image_url ?? "");
   const [fileName, setFileName] = useState("");
   const [resizing, setResizing] = useState(false);

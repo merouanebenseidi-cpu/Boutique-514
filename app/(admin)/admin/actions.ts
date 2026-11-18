@@ -97,7 +97,7 @@ export async function saveProduct(_: string | null, form: FormData): Promise<str
     return `Enregistrement impossible : ${(e as Error).message}`;
   }
   revalidatePath("/", "layout");
-  redirect("/admin/produits");
+  return "ok";
 }
 
 export async function toggleProduct(form: FormData) {
