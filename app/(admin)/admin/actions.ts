@@ -3,7 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { z } from "zod";
-import { checkPassword, createSession, destroySession, requireAdmin } from "@/lib/auth";
+import { adminPasswordConfigured, checkPassword, createSession, destroySession, requireAdmin } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { CATEGORIES } from "@/lib/i18n";
 import { setOrderStatus } from "@/lib/orders";
@@ -15,6 +15,9 @@ import { ORDER_STATUSES } from "@/lib/types";
 export async function login(_: string | null, form: FormData): Promise<string | null> {
   // Petit délai fixe : ralentit les essais de mot de passe à la chaîne.
   await new Promise((r) => setTimeout(r, 600));
+  if (!adminPasswordConfigured()) {
+    return "ADMIN_PASSWORD n'est pas configuré ou fait moins de 8 caractères : corrige-le dans les variables d'environnement puis relance une mise en ligne.";
+  }
   if (!checkPassword(String(form.get("password") ?? ""))) return "Mot de passe incorrect.";
   await createSession();
   redirect("/admin/commandes");

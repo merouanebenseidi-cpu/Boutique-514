@@ -7,7 +7,7 @@ const COOKIE = "admin_session";
 const MAX_AGE = 60 * 60 * 24 * 7; // 7 jours
 
 function secret() {
-  const s = process.env.ADMIN_SESSION_SECRET || "";
+  const s = cleanEnv(process.env.ADMIN_SESSION_SECRET);
   if (s.length < 16) throw new Error("ADMIN_SESSION_SECRET manquant ou trop court (16 caractères minimum).");
   return s;
 }
@@ -22,11 +22,20 @@ function safeEqual(a: string, b: string) {
   return ba.length === bb.length && timingSafeEqual(ba, bb);
 }
 
+/** Valeur d'une variable sans espaces ni guillemets parasites (copier-coller). */
+function cleanEnv(v: string | undefined) {
+  return (v ?? "").trim().replace(/^(["'])(.*)\1$/, "$2");
+}
+
+export function adminPasswordConfigured() {
+  return cleanEnv(process.env.ADMIN_PASSWORD).length >= 8;
+}
+
 export function checkPassword(input: string) {
-  const expected = process.env.ADMIN_PASSWORD || "";
+  const expected = cleanEnv(process.env.ADMIN_PASSWORD);
   if (expected.length < 8) return false; // refuse les mots de passe vides ou trop faibles
   // Compare des empreintes de taille fixe pour ne pas révéler la longueur.
-  return safeEqual(sign(`pw:${input}`), sign(`pw:${expected}`));
+  return safeEqual(sign(`pw:${input.trim()}`), sign(`pw:${expected}`));
 }
 
 export async function createSession() {
