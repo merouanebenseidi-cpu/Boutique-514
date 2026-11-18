@@ -3,12 +3,14 @@
 import { useActionState, useState } from "react";
 import { CATEGORIES } from "@/lib/i18n";
 import type { Product } from "@/lib/types";
+import { resizeImage } from "@/lib/resizeImage";
 import { saveProduct } from "../actions";
 
 export function ProductForm({ product, uploads }: { product?: Product; uploads: boolean }) {
   const [error, action, pending] = useActionState(saveProduct, null);
   const [preview, setPreview] = useState(product?.image_url ?? "");
   const [fileName, setFileName] = useState("");
+  const [resizing, setResizing] = useState(false);
 
   return (
     <form action={action} className="space-y-5">
@@ -76,13 +78,22 @@ export function ProductForm({ product, uploads }: { product?: Product; uploads: 
                   <input
                     name="image"
                     type="file"
-                    accept="image/jpeg,image/png,image/webp,image/avif"
+                    accept="image/*"
                     className="sr-only"
-                    onChange={(e) => {
-                      const f = e.target.files?.[0];
-                      if (!f) return;
-                      setFileName(f.name);
-                      setPreview(URL.createObjectURL(f));
+                    onChange={async (e) => {
+                      const input = e.target;
+                      const original = input.files?.[0];
+                      if (!original) return;
+                      setFileName("Préparation de la photo…");
+                      setResizing(true);
+                      const small = await resizeImage(original);
+                      // Remplace le fichier choisi par la version réduite.
+                      const dt = new DataTransfer();
+                      dt.items.add(small);
+                      input.files = dt.files;
+                      setResizing(false);
+                      setFileName(`${original.name} · ${(small.size / 1024 / 1024).toFixed(1)} Mo`);
+                      setPreview(URL.createObjectURL(small));
                     }}
                   />
                 </label>
@@ -110,7 +121,7 @@ export function ProductForm({ product, uploads }: { product?: Product; uploads: 
 
       {error && <p role="alert" className="rounded-xl bg-red-50 p-3 font-medium text-promo">{error}</p>}
 
-      <button className="btn-primary px-8" disabled={pending}>
+      <button className="btn-primary px-8" disabled={pending || resizing}>
         {pending ? "Enregistrement…" : "Enregistrer"}
       </button>
     </form>

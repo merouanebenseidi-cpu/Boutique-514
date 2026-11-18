@@ -80,15 +80,21 @@ export async function saveProduct(_: string | null, form: FormData): Promise<str
     try {
       data.image_url = await uploadProductImage(file);
     } catch (e) {
-      return (e as Error).message;
+      console.error("uploadProductImage", e);
+      return `Photo : ${(e as Error).message}`;
     }
   }
 
-  const sql = db();
-  if (id > 0) {
-    await sql`update products set ${sql(data)}, updated_at = now() where id = ${id}`;
-  } else {
-    await sql`insert into products ${sql(data)}`;
+  try {
+    const sql = db();
+    if (id > 0) {
+      await sql`update products set ${sql(data)}, updated_at = now() where id = ${id}`;
+    } else {
+      await sql`insert into products ${sql(data)}`;
+    }
+  } catch (e) {
+    console.error("saveProduct", e);
+    return `Enregistrement impossible : ${(e as Error).message}`;
   }
   revalidatePath("/", "layout");
   redirect("/admin/produits");
