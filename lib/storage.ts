@@ -1,6 +1,7 @@
 import "server-only";
 import { createClient } from "@supabase/supabase-js";
 import { randomUUID } from "node:crypto";
+import { cleanEnv, supabaseUrl } from "./env";
 
 const BUCKET = "produits";
 const ALLOWED: Record<string, string> = {
@@ -11,7 +12,7 @@ const ALLOWED: Record<string, string> = {
 };
 
 export function storageEnabled() {
-  return Boolean(process.env.SUPABASE_URL && process.env.SUPABASE_SERVICE_ROLE_KEY);
+  return Boolean(supabaseUrl() && cleanEnv(process.env.SUPABASE_SERVICE_ROLE_KEY));
 }
 
 /** Envoie la photo dans Supabase Storage et renvoie son URL publique. */
@@ -21,7 +22,7 @@ export async function uploadProductImage(file: File): Promise<string> {
   if (!ext) throw new Error("Format d'image non accepté (JPG, PNG, WebP ou AVIF).");
   if (file.size > 4 * 1024 * 1024) throw new Error("Image trop lourde (4 Mo maximum).");
 
-  const supabase = createClient(process.env.SUPABASE_URL!, process.env.SUPABASE_SERVICE_ROLE_KEY!, {
+  const supabase = createClient(supabaseUrl()!, cleanEnv(process.env.SUPABASE_SERVICE_ROLE_KEY), {
     auth: { persistSession: false },
   });
   const path = `${new Date().getFullYear()}/${randomUUID()}.${ext}`;

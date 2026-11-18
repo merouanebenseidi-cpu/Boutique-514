@@ -1,6 +1,7 @@
 import postgres from "postgres";
 import { createClient } from "@supabase/supabase-js";
 import { requireAdmin } from "@/lib/auth";
+import { cleanEnv, supabaseUrl } from "@/lib/env";
 
 export const dynamic = "force-dynamic";
 
@@ -8,7 +9,7 @@ type Check = { label: string; ok: boolean | null; detail: string };
 
 /** Analyse DATABASE_URL sans jamais afficher le mot de passe. */
 function inspectDatabaseUrl(raw: string | undefined): Check[] {
-  if (!raw) return [{ label: "DATABASE_URL", ok: false, detail: "Variable absente." }];
+  if (!raw?.trim()) return [{ label: "DATABASE_URL", ok: false, detail: "Variable absente." }];
   const checks: Check[] = [];
   const v = raw.trim();
   if (v !== raw) checks.push({ label: "Espaces", ok: false, detail: "Il y a des espaces au début ou à la fin de l'adresse." });
@@ -56,9 +57,9 @@ function inspectDatabaseUrl(raw: string | undefined): Check[] {
 }
 
 async function testDatabase(): Promise<Check[]> {
-  const url = process.env.DATABASE_URL;
+  const url = cleanEnv(process.env.DATABASE_URL);
   if (!url) return [];
-  const sql = postgres(url.trim(), { prepare: false, max: 1, connect_timeout: 8, idle_timeout: 1, onnotice: () => {} });
+  const sql = postgres(url, { prepare: false, max: 1, connect_timeout: 8, idle_timeout: 1, onnotice: () => {} });
   try {
     await sql`select 1`;
     const tables = await sql<{ table_name: string }[]>`
@@ -81,7 +82,8 @@ async function testDatabase(): Promise<Check[]> {
     const msg = (e as Error).message;
     let hint = "";
     if (/password authentication failed/i.test(msg)) hint = " → Mot de passe incorrect : réinitialise-le dans Supabase et mets à jour DATABASE_URL.";
-    else if (/tenant|user not found/i.test(msg)) hint = " → Utilisateur ou région incorrects : recopie l'adresse depuis Supabase (Connect → Transaction pooler).";
+    else if (/tenant|user not found/i.test(msg))
+      hint = " → Le serveur (partie entre @ et :6543) ne correspond pas à ton projet : recopie l'adresse exacte depuis Supabase (Connect → Direct → Transaction pooler), sans la retaper.";
     else if (/ENOTFOUND|getaddrinfo/i.test(msg)) hint = " → Serveur introuvable : adresse mal copiée.";
     else if (/timeout|ETIMEDOUT/i.test(msg)) hint = " → Pas de réponse : vérifie que le projet Supabase n'est pas en pause.";
     return [{ label: "Connexion à la base", ok: false, detail: msg + hint }];
@@ -91,18 +93,18 @@ async function testDatabase(): Promise<Check[]> {
 }
 
 async function testStorage(): Promise<Check[]> {
-  const url = process.env.SUPABASE_URL?.trim();
-  const key = process.env.SUPABASE_SERVICE_ROLE_KEY?.trim();
-  if (!url || !key) return [{ label: "Stockage des photos", ok: null, detail: "Non configuré (facultatif : l'admin acceptera seulement des liens d'image)." }];
-  if (!/^https:\/\/[a-z0-9]+\.supabase\.co\/?$/.test(url))
-    return [{ label: "SUPABASE_URL", ok: false, detail: "Doit ressembler à https://xxxx.supabase.co (sans rien après)." }];
+  const raw = cleanEnv(process.env.SUPABASE_URL);
+  const url = supabaseUrl();
+  const key = cleanEnv(process.env.SUPABASE_SERVICE_ROLE_KEY);
+  if (!raw || !key) return [{ label: "Stockage des photos", ok: null, detail: "Non configuré (facultatif : l'admin acceptera seulement des liens d'image)." }];
+  if (!url) return [{ label: "SUPABASE_URL", ok: false, detail: "Adresse non reconnue : elle doit ressembler à https://xxxx.supabase.co" }];
   try {
     const supabase = createClient(url, key, { auth: { persistSession: false } });
     const { data, error } = await supabase.storage.getBucket("produits");
     if (error) {
       return [{ label: "Stockage des photos", ok: false, detail: `${error.message} → vérifie la clé secrète (secret / service_role, pas anon) et relance db/supabase-setup.sql.` }];
     }
-    return [{ label: "Stockage des photos", ok: Boolean(data?.public), detail: data?.public ? "Bucket « produits » OK" : "Le bucket « produits » n'est pas public." }];
+    return [{ label: "SUPABASE_URL", ok: true, detail: url }, { label: "Stockage des photos", ok: Boolean(data?.public), detail: data?.public ? "Bucket « produits » OK" : "Le bucket « produits » n'est pas public." }];
   } catch (e) {
     return [{ label: "Stockage des photos", ok: false, detail: (e as Error).message }];
   }

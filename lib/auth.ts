@@ -2,6 +2,7 @@ import "server-only";
 import { createHmac, timingSafeEqual } from "node:crypto";
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
+import { cleanEnv } from "./env";
 
 const COOKIE = "admin_session";
 const MAX_AGE = 60 * 60 * 24 * 7; // 7 jours
@@ -20,11 +21,6 @@ function safeEqual(a: string, b: string) {
   const ba = Buffer.from(a);
   const bb = Buffer.from(b);
   return ba.length === bb.length && timingSafeEqual(ba, bb);
-}
-
-/** Valeur d'une variable sans espaces ni guillemets parasites (copier-coller). */
-function cleanEnv(v: string | undefined) {
-  return (v ?? "").trim().replace(/^(["'])(.*)\1$/, "$2");
 }
 
 export function adminPasswordConfigured() {

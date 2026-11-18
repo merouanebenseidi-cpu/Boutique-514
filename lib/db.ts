@@ -1,5 +1,6 @@
 import "server-only";
 import postgres from "postgres";
+import { cleanEnv } from "./env";
 
 declare global {
   // eslint-disable-next-line no-var
@@ -7,10 +8,10 @@ declare global {
 }
 
 function create() {
-  const url = process.env.DATABASE_URL;
+  const url = cleanEnv(process.env.DATABASE_URL);
   if (!url) throw new Error("DATABASE_URL manquant : configure la base de données (voir README).");
   // prepare:false est requis avec le « transaction pooler » de Supabase.
-  return postgres(url.trim(), { prepare: false, max: 5, idle_timeout: 20 });
+  return postgres(url, { prepare: false, max: 5, idle_timeout: 20 });
 }
 
 export function db() {
