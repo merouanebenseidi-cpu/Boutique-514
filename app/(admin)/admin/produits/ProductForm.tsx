@@ -70,12 +70,12 @@ export function ProductForm({ product, uploads }: { product?: Product; uploads: 
           <div className="min-w-60 flex-1 space-y-3">
             {uploads && (
               <label className="block">
-                <span className="label">Envoyer une photo (JPG, PNG, WebP · 4 Mo max)</span>
+                <span className="label">📷 Envoyer une photo (JPG, PNG, WebP · 4 Mo max)</span>
                 <input
                   name="image"
                   type="file"
                   accept="image/jpeg,image/png,image/webp,image/avif"
-                  className="block w-full text-sm"
+                  className="block w-full cursor-pointer text-sm text-gray-600 file:me-3 file:cursor-pointer file:rounded-xl file:border-0 file:bg-brand-600 file:px-4 file:py-2.5 file:font-semibold file:text-white hover:file:bg-brand-700"
                   onChange={(e) => {
                     const f = e.target.files?.[0];
                     if (f) setPreview(URL.createObjectURL(f));
