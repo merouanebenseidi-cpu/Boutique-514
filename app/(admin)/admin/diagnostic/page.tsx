@@ -1,7 +1,7 @@
 import postgres from "postgres";
 import { createClient } from "@supabase/supabase-js";
 import { requireAdmin } from "@/lib/auth";
-import { cleanEnv, supabaseUrl } from "@/lib/env";
+import { cleanEnv, supabaseUrlInfo } from "@/lib/env";
 
 export const dynamic = "force-dynamic";
 
@@ -93,18 +93,23 @@ async function testDatabase(): Promise<Check[]> {
 }
 
 async function testStorage(): Promise<Check[]> {
-  const raw = cleanEnv(process.env.SUPABASE_URL);
-  const url = supabaseUrl();
+  const info = supabaseUrlInfo();
+  const url = info?.url;
   const key = cleanEnv(process.env.SUPABASE_SERVICE_ROLE_KEY);
-  if (!raw || !key) return [{ label: "Stockage des photos", ok: null, detail: "Non configuré (facultatif : l'admin acceptera seulement des liens d'image)." }];
+  if (!key) return [{ label: "Stockage des photos", ok: null, detail: "Non configuré (facultatif : l'admin acceptera seulement des liens d'image)." }];
   if (!url) return [{ label: "SUPABASE_URL", ok: false, detail: "Adresse non reconnue : elle doit ressembler à https://xxxx.supabase.co" }];
+  const urlCheck: Check = {
+    label: "Adresse du projet",
+    ok: true,
+    detail: info!.source === "SUPABASE_URL" ? url : `${url} (déduite de DATABASE_URL, SUPABASE_URL étant illisible)`,
+  };
   try {
     const supabase = createClient(url, key, { auth: { persistSession: false } });
     const { data, error } = await supabase.storage.getBucket("produits");
     if (error) {
-      return [{ label: "Stockage des photos", ok: false, detail: `${error.message} → vérifie la clé secrète (secret / service_role, pas anon) et relance db/supabase-setup.sql.` }];
+      return [urlCheck, { label: "Stockage des photos", ok: false, detail: `${error.message} → vérifie la clé secrète (secret / service_role, pas anon) et relance db/supabase-setup.sql.` }];
     }
-    return [{ label: "SUPABASE_URL", ok: true, detail: url }, { label: "Stockage des photos", ok: Boolean(data?.public), detail: data?.public ? "Bucket « produits » OK" : "Le bucket « produits » n'est pas public." }];
+    return [urlCheck, { label: "Stockage des photos", ok: Boolean(data?.public), detail: data?.public ? "Bucket « produits » OK" : "Le bucket « produits » n'est pas public." }];
   } catch (e) {
     return [{ label: "Stockage des photos", ok: false, detail: (e as Error).message }];
   }
