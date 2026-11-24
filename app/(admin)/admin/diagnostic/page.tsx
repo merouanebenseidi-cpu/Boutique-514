@@ -59,7 +59,12 @@ function inspectDatabaseUrl(raw: string | undefined): Check[] {
 async function testDatabase(): Promise<Check[]> {
   const url = cleanEnv(process.env.DATABASE_URL);
   if (!url) return [];
-  const sql = postgres(url, { prepare: false, max: 1, connect_timeout: 8, idle_timeout: 1, onnotice: () => {} });
+  let sql: ReturnType<typeof postgres>;
+  try {
+    sql = postgres(url, { prepare: false, max: 1, connect_timeout: 8, idle_timeout: 1, onnotice: () => {} });
+  } catch (e) {
+    return [{ label: "Connexion à la base", ok: false, detail: `Adresse illisible : ${(e as Error).message}. Recopie DATABASE_URL depuis Supabase (Connect → Transaction pooler).` }];
+  }
   try {
     await sql`select 1`;
     const tables = await sql<{ table_name: string }[]>`
@@ -137,11 +142,19 @@ export default async function Diagnostic() {
     "NEXT_PUBLIC_WHATSAPP",
   ].map((k) => ({ label: k, ok: process.env[k] ? true : k.startsWith("NEXT_PUBLIC") ? null : false, detail: process.env[k] ? "définie" : "absente" }));
 
+  // Chaque test est isolé : une erreur s'affiche en ❌ au lieu de faire planter la page.
+  const safe = async (label: string, fn: () => Check[] | Promise<Check[]>): Promise<Check[]> => {
+    try {
+      return await fn();
+    } catch (e) {
+      return [{ label, ok: false, detail: (e as Error)?.message || String(e) }];
+    }
+  };
   const sections: [string, Check[]][] = [
     ["Variables", env],
-    ["Adresse de la base (DATABASE_URL)", inspectDatabaseUrl(process.env.DATABASE_URL)],
-    ["Test de la base", await testDatabase()],
-    ["Photos", await testStorage()],
+    ["Adresse de la base (DATABASE_URL)", await safe("Analyse de l'adresse", () => inspectDatabaseUrl(process.env.DATABASE_URL))],
+    ["Test de la base", await safe("Connexion à la base", testDatabase)],
+    ["Photos", await safe("Stockage des photos", testStorage)],
   ];
 
   return (
