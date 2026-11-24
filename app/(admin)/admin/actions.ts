@@ -3,7 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { z } from "zod";
-import { adminPasswordConfigured, checkPassword, createSession, destroySession, requireAdmin } from "@/lib/auth";
+import { adminPasswordConfigured, checkPassword, sessionSecretConfigured, createSession, destroySession, requireAdmin } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { ensureSchema } from "@/lib/migrate";
 import { CATEGORIES } from "@/lib/i18n";
@@ -16,6 +16,9 @@ import { ORDER_STATUSES } from "@/lib/types";
 export async function login(_: string | null, form: FormData): Promise<string | null> {
   // Petit délai fixe : ralentit les essais de mot de passe à la chaîne.
   await new Promise((r) => setTimeout(r, 600));
+  if (!sessionSecretConfigured()) {
+    return "ADMIN_SESSION_SECRET n'est pas configuré ou fait moins de 16 caractères : mets une suite d'au moins 16 caractères au hasard dans les variables d'environnement, puis relance une mise en ligne.";
+  }
   if (!adminPasswordConfigured()) {
     return "ADMIN_PASSWORD n'est pas configuré ou fait moins de 8 caractères : corrige-le dans les variables d'environnement puis relance une mise en ligne.";
   }

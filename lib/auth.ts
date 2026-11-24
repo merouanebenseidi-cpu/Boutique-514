@@ -23,6 +23,10 @@ function safeEqual(a: string, b: string) {
   return ba.length === bb.length && timingSafeEqual(ba, bb);
 }
 
+export function sessionSecretConfigured() {
+  return cleanEnv(process.env.ADMIN_SESSION_SECRET).length >= 16;
+}
+
 export function adminPasswordConfigured() {
   return cleanEnv(process.env.ADMIN_PASSWORD).length >= 8;
 }
