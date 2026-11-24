@@ -1,12 +1,18 @@
 import "../../globals.css";
 import type { Metadata, Viewport } from "next";
+import { Cairo, Playfair_Display } from "next/font/google";
 import Link from "next/link";
 import { notFound } from "next/navigation";
+import { MessageCircle } from "lucide-react";
 import { CartProvider } from "@/components/CartProvider";
-import { CartLink, LangSwitch } from "@/components/HeaderClient";
+import { CategoryIcon } from "@/components/CategoryIcon";
+import { CartLink, HeaderShadow, LangSwitch } from "@/components/HeaderClient";
 import { CATEGORIES, DICTS, isLang, LANGS } from "@/lib/i18n";
 
 export const dynamic = "force-dynamic";
+
+const cairo = Cairo({ subsets: ["arabic", "latin"], weight: ["400", "500", "600", "700", "800"], variable: "--font-cairo", display: "swap" });
+const playfair = Playfair_Display({ subsets: ["latin"], weight: ["600", "700"], variable: "--font-playfair", display: "swap" });
 
 const SHOP = process.env.NEXT_PUBLIC_SHOP_NAME || "Boutique 514";
 
@@ -20,7 +26,21 @@ export async function generateMetadata({ params }: { params: Promise<{ lang: str
   return { title: { default: SHOP, template: `%s · ${SHOP}` }, description: DICTS[lang].heroTitle };
 }
 
-export const viewport: Viewport = { themeColor: "#0b8043", width: "device-width", initialScale: 1 };
+export const viewport: Viewport = { themeColor: "#082c1f", width: "device-width", initialScale: 1 };
+
+function Logo({ lang }: { lang: string }) {
+  const [first, ...rest] = SHOP.split(" ");
+  return (
+    <Link href={`/${lang}`} className="group flex items-baseline gap-1.5" dir="ltr">
+      <span className="font-display text-2xl font-bold tracking-tight text-brand-950">{first}</span>
+      {rest.length > 0 && (
+        <span className="rounded-md bg-gold-400 px-1.5 text-lg font-extrabold text-brand-950 transition group-hover:bg-gold-300">
+          {rest.join(" ")}
+        </span>
+      )}
+    </Link>
+  );
+}
 
 export default async function ShopLayout({
   children,
@@ -33,16 +53,35 @@ export default async function ShopLayout({
   if (!isLang(lang)) notFound();
   const t = DICTS[lang];
   const wa = process.env.NEXT_PUBLIC_WHATSAPP;
+  const announce = [...t.announce, ...t.announce];
 
   return (
-    <html lang={lang} dir={lang === "ar" ? "rtl" : "ltr"}>
+    <html lang={lang} dir={lang === "ar" ? "rtl" : "ltr"} className={`${cairo.variable} ${playfair.variable}`}>
       <body className="min-h-screen font-sans antialiased">
         <CartProvider>
-          <header className="sticky top-0 z-20 border-b border-gray-200 bg-white/95 backdrop-blur">
+          {/* Bandeau d'annonces défilant */}
+          <div className="overflow-hidden bg-brand-950 py-2 text-xs font-medium text-gold-200" dir="ltr">
+            <div className="flex w-max animate-marquee gap-12 whitespace-nowrap hover:[animation-play-state:paused]">
+              {[0, 1].map((k) => (
+                <div key={k} className="flex gap-12" aria-hidden={k === 1}>
+                  {announce.map((a, i) => (
+                    <span key={i} className="flex items-center gap-3" dir={lang === "ar" ? "rtl" : "ltr"}>
+                      <span className="text-gold-400">✦</span>
+                      {a}
+                    </span>
+                  ))}
+                </div>
+              ))}
+            </div>
+          </div>
+
+          <header
+            id="site-header"
+            className="sticky top-0 z-30 border-b border-transparent bg-cream/85 backdrop-blur-md transition-shadow data-[scrolled]:border-black/5 data-[scrolled]:shadow-[0_6px_24px_-12px_rgba(8,44,31,0.25)]"
+          >
+            <HeaderShadow />
             <div className="mx-auto flex max-w-6xl items-center justify-between gap-3 px-4 py-3">
-              <Link href={`/${lang}`} className="text-xl font-extrabold tracking-tight text-brand-700">
-                {SHOP}
-              </Link>
+              <Logo lang={lang} />
               <div className="flex items-center gap-2">
                 <LangSwitch lang={lang} />
                 <CartLink lang={lang} label={t.cart} />
@@ -53,9 +92,10 @@ export default async function ShopLayout({
                 <Link
                   key={c.slug}
                   href={`/${lang}/categorie/${c.slug}`}
-                  className="shrink-0 rounded-full border border-gray-200 bg-white px-3 py-1.5 hover:border-brand-500 hover:text-brand-700"
+                  className="flex shrink-0 items-center gap-1.5 rounded-full border border-brand-900/10 bg-white px-3.5 py-1.5 font-medium text-brand-900 transition hover:border-gold-400 hover:bg-gold-100"
                 >
-                  <span aria-hidden>{c.icon}</span> {c[lang]}
+                  <CategoryIcon slug={c.slug} className="size-4 text-brand-600" />
+                  {c[lang]}
                 </Link>
               ))}
             </nav>
@@ -63,15 +103,37 @@ export default async function ShopLayout({
 
           <main className="mx-auto max-w-6xl px-4 py-6">{children}</main>
 
-          <footer className="mt-12 border-t border-gray-200 bg-white">
-            <div className="mx-auto flex max-w-6xl flex-col items-center gap-3 px-4 py-8 text-center text-sm text-gray-600">
-              <p>{t.footer}</p>
-              {wa && (
-                <a href={`https://wa.me/${wa}`} target="_blank" rel="noopener noreferrer" className="btn-ghost">
-                  💬 {t.contactWhatsapp}
-                </a>
-              )}
-              <p>© {new Date().getFullYear()} {SHOP}</p>
+          <footer className="mt-16 bg-brand-950 text-brand-100">
+            <div className="mx-auto grid max-w-6xl gap-10 px-4 py-12 sm:grid-cols-3">
+              <div className="space-y-3">
+                <p className="font-display text-2xl font-bold text-white">{SHOP}</p>
+                <p className="text-sm leading-relaxed text-brand-200">{t.footerAbout}</p>
+              </div>
+              <div>
+                <p className="mb-3 text-sm font-bold tracking-wider text-gold-300 uppercase">{t.footerShop}</p>
+                <ul className="space-y-2 text-sm">
+                  {CATEGORIES.map((c) => (
+                    <li key={c.slug}>
+                      <Link href={`/${lang}/categorie/${c.slug}`} className="transition hover:text-gold-300">
+                        {c[lang]}
+                      </Link>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+              <div className="space-y-3">
+                <p className="text-sm font-bold tracking-wider text-gold-300 uppercase">{t.footerHelp}</p>
+                <p className="text-sm leading-relaxed text-brand-200">{t.howToOrder}</p>
+                {wa && (
+                  <a href={`https://wa.me/${wa}`} target="_blank" rel="noopener noreferrer" className="btn-gold">
+                    <MessageCircle className="size-4" aria-hidden />
+                    {t.contactWhatsapp}
+                  </a>
+                )}
+              </div>
+            </div>
+            <div className="border-t border-white/10 py-5 text-center text-xs text-brand-300">
+              © {new Date().getFullYear()} {SHOP} · {t.footer}
             </div>
           </footer>
         </CartProvider>

@@ -11,7 +11,7 @@ function create() {
   const url = cleanEnv(process.env.DATABASE_URL);
   if (!url) throw new Error("DATABASE_URL manquant : configure la base de données (voir README).");
   // prepare:false est requis avec le « transaction pooler » de Supabase.
-  return postgres(url, { prepare: false, max: 5, idle_timeout: 20 });
+  return postgres(url, { prepare: false, max: 5, idle_timeout: 20, onnotice: () => {} });
 }
 
 export function db() {

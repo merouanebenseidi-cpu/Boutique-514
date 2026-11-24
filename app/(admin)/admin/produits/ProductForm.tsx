@@ -1,7 +1,7 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { useActionState, useState } from "react";
+import { useActionState, useEffect, useState } from "react";
 import { CATEGORIES } from "@/lib/i18n";
 import type { Product } from "@/lib/types";
 import { resizeImage } from "@/lib/resizeImage";
@@ -31,6 +31,14 @@ export function ProductForm({ product, uploads }: { product?: Product; uploads: 
   const [preview, setPreview] = useState(product?.image_url ?? "");
   const [fileName, setFileName] = useState("");
   const [resizing, setResizing] = useState(false);
+  // Date de fin affichée dans le fuseau de l'appareil (calculée après le montage pour éviter un décalage serveur/navigateur).
+  const [promoLocal, setPromoLocal] = useState("");
+  useEffect(() => {
+    if (!product?.promo_ends_at) return;
+    const d = new Date(product.promo_ends_at);
+    const pad = (n: number) => String(n).padStart(2, "0");
+    setPromoLocal(`${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`);
+  }, [product?.promo_ends_at]);
 
   return (
     <form action={action} className="space-y-5">
@@ -77,6 +85,25 @@ export function ProductForm({ product, uploads }: { product?: Product; uploads: 
           <span className="label">Stock *</span>
           <input name="stock" required inputMode="numeric" defaultValue={product?.stock ?? 1} className="input" />
         </label>
+        <div className="sm:col-span-3">
+          <label className="block sm:max-w-xs">
+            <span className="label">⏱ Fin de la promo (facultatif)</span>
+            <input
+              type="datetime-local"
+              value={promoLocal}
+              onChange={(e) => setPromoLocal(e.target.value)}
+              className="input"
+            />
+          </label>
+          {/* Envoyée en heure universelle : l'heure saisie est celle de ton appareil. */}
+          <input type="hidden" name="promo_ends_at" value={promoLocal ? new Date(promoLocal).toISOString() : ""} />
+          <p className="mt-1 text-xs text-gray-500">
+            Affiche un compte à rebours sur le site. À cette date, le produit repasse automatiquement au prix barré.
+            {promoLocal && (
+              <button type="button" className="ms-2 underline" onClick={() => setPromoLocal("")}>Retirer la date</button>
+            )}
+          </p>
+        </div>
       </section>
 
       <section className="card space-y-4 p-4">

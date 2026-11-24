@@ -1,6 +1,8 @@
 import "server-only";
 import { z } from "zod";
 import { db } from "./db";
+import { ensureSchema } from "./migrate";
+import { withEffectivePrice } from "./pricing";
 import type { PaymentMethod } from "./payments";
 
 /** Normalise un numéro algérien vers le format 0XXXXXXXXX. Renvoie null s'il est invalide. */
@@ -45,7 +47,16 @@ export class OrderFailure extends Error {
   }
 }
 
-type LockedProduct = { id: number; name_fr: string; name_ar: string; price: number; stock: number; active: boolean };
+type LockedProduct = {
+  id: number;
+  name_fr: string;
+  name_ar: string;
+  price: number;
+  compare_at_price: number | null;
+  promo_ends_at: Date | null;
+  stock: number;
+  active: boolean;
+};
 
 /**
  * Crée la commande dans une transaction : relit les prix et le stock en base
@@ -66,6 +77,7 @@ export async function createOrder(input: OrderInput, allowedPayments: PaymentMet
   for (const it of input.items) qtyById.set(it.id, (qtyById.get(it.id) ?? 0) + it.qty);
   const ids = [...qtyById.keys()].sort((a, b) => a - b);
 
+  await ensureSchema();
   const sql = db();
   return sql.begin(async (tx) => {
     const [rate] = await tx<{ price_home: number; price_desk: number }[]>`
@@ -74,9 +86,10 @@ export async function createOrder(input: OrderInput, allowedPayments: PaymentMet
 
     // Verrouille les lignes produits pour éviter de vendre deux fois le dernier article.
     const products = await tx<LockedProduct[]>`
-      select id, name_fr, name_ar, price, stock, active from products
+      select id, name_fr, name_ar, price, compare_at_price, promo_ends_at, stock, active from products
       where id in ${tx(ids)} order by id for update`;
-    const byId = new Map(products.map((p) => [p.id, p]));
+    // Prix effectif : une promo terminée repasse au prix normal.
+    const byId = new Map(products.map((p) => [p.id, withEffectivePrice(p)]));
 
     let subtotal = 0;
     const lines: { product: LockedProduct; qty: number }[] = [];

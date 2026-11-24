@@ -5,6 +5,7 @@ import { redirect } from "next/navigation";
 import { z } from "zod";
 import { adminPasswordConfigured, checkPassword, createSession, destroySession, requireAdmin } from "@/lib/auth";
 import { db } from "@/lib/db";
+import { ensureSchema } from "@/lib/migrate";
 import { CATEGORIES } from "@/lib/i18n";
 import { setOrderStatus } from "@/lib/orders";
 import { storageEnabled, uploadProductImage } from "@/lib/storage";
@@ -47,6 +48,10 @@ const ProductSchema = z.object({
   image_url: z.string().trim().max(1000),
   active: z.boolean(),
   featured: z.boolean(),
+  promo_ends_at: z.preprocess(
+    (v) => (v ? new Date(String(v)) : null),
+    z.date("Date de fin de promo invalide.").nullable(),
+  ),
 });
 
 export async function saveProduct(_: string | null, form: FormData): Promise<string | null> {
@@ -65,6 +70,7 @@ export async function saveProduct(_: string | null, form: FormData): Promise<str
     image_url: form.get("image_url") ?? "",
     active: form.get("active") === "on",
     featured: form.get("featured") === "on",
+    promo_ends_at: form.get("promo_ends_at") || null,
   });
   if (!parsed.success) return parsed.error.issues[0]?.message ?? "Formulaire invalide.";
   const data = parsed.data;
@@ -73,6 +79,10 @@ export async function saveProduct(_: string | null, form: FormData): Promise<str
   if (data.compare_at_price !== null && data.compare_at_price <= data.price) {
     return "Le prix barré doit être supérieur au prix de vente (ou laissé vide).";
   }
+  if (data.promo_ends_at && data.compare_at_price === null) {
+    return "Une date de fin de promo nécessite un prix barré (le prix normal, appliqué après la promo).";
+  }
+  if (data.promo_ends_at && Number.isNaN(data.promo_ends_at.getTime())) return "Date de fin de promo invalide.";
 
   const file = form.get("image");
   if (file instanceof File && file.size > 0) {
@@ -86,6 +96,7 @@ export async function saveProduct(_: string | null, form: FormData): Promise<str
   }
 
   try {
+    await ensureSchema();
     const sql = db();
     if (id > 0) {
       await sql`update products set ${sql(data)}, updated_at = now() where id = ${id}`;

@@ -77,3 +77,6 @@ alter table products       enable row level security;
 alter table shipping_rates enable row level security;
 alter table orders         enable row level security;
 alter table order_items    enable row level security;
+
+-- Fin de promo (compte à rebours) : à cette date le produit revient au prix barré.
+alter table products add column if not exists promo_ends_at timestamptz;
