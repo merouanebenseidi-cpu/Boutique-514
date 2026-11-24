@@ -4,7 +4,9 @@ import { notFound } from "next/navigation";
 import { Banknote, ShieldCheck, Truck } from "lucide-react";
 import { AddToCartButton } from "@/components/AddToCartButton";
 import { Countdown } from "@/components/Countdown";
+import { ProductGallery } from "@/components/ProductGallery";
 import { ProductImage, productName } from "@/components/ProductCard";
+import { productImages } from "@/lib/productImages";
 import { discountPercent, getProduct } from "@/lib/catalog";
 import { categoryName, DICTS, formatDA, isLang } from "@/lib/i18n";
 
@@ -29,12 +31,17 @@ export default async function ProductPage({ params }: Props) {
 
   return (
     <div className="grid animate-fade-up gap-8 md:grid-cols-2 md:gap-12">
-      <div className="card relative aspect-square overflow-hidden">
-        <ProductImage p={p} />
-        {off > 0 && (
-          <span dir="ltr" className="gold-shine absolute start-4 top-4 rounded-full bg-promo px-3 py-1.5 font-bold text-white shadow">-{off}%</span>
-        )}
-      </div>
+      <ProductGallery
+        images={productImages(p)}
+        alt={productName(p, lang)}
+        rtl={lang === "ar"}
+        placeholder={<ProductImage p={p} />}
+        badge={
+          off > 0 ? (
+            <span dir="ltr" className="gold-shine absolute start-4 top-4 rounded-full bg-promo px-3 py-1.5 font-bold text-white shadow">-{off}%</span>
+          ) : undefined
+        }
+      />
 
       <div className="flex flex-col gap-5">
         <Link

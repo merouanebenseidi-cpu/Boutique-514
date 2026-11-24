@@ -12,6 +12,7 @@ export type Product = {
   active: boolean;
   featured: boolean;
   promo_ends_at: Date | null;
+  images?: string[];
 };
 
 export type ShippingRate = {

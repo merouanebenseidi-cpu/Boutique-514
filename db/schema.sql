@@ -80,3 +80,6 @@ alter table order_items    enable row level security;
 
 -- Fin de promo (compte à rebours) : à cette date le produit revient au prix barré.
 alter table products add column if not exists promo_ends_at timestamptz;
+
+-- Plusieurs photos par produit (la première est recopiée dans image_url).
+alter table products add column if not exists images text[] not null default '{}';

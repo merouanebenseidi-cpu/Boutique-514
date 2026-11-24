@@ -24,6 +24,9 @@ create index if not exists products_active_category_idx on products (active, cat
 -- Fin de promo (compte à rebours) : à cette date le produit revient au prix barré.
 alter table products add column if not exists promo_ends_at timestamptz;
 
+-- Plusieurs photos par produit (la première est recopiée dans image_url).
+alter table products add column if not exists images text[] not null default '{}';
+
 -- Wilayas et tarifs de livraison (modifiables depuis l'admin).
 create table if not exists shipping_rates (
   code        integer primary key,

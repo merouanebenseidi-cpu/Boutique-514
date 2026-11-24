@@ -6,6 +6,7 @@ import { AddToCartButton } from "./AddToCartButton";
 import { CategoryIcon } from "./CategoryIcon";
 import { Countdown } from "./Countdown";
 import { Reveal } from "./Reveal";
+import { productImages } from "@/lib/productImages";
 
 export function productName(p: Pick<Product, "name_fr" | "name_ar">, lang: Lang) {
   return lang === "ar" && p.name_ar ? p.name_ar : p.name_fr;
@@ -31,6 +32,16 @@ export function ProductCard({ p, lang }: { p: Product; lang: Lang }) {
     <article className="group card flex h-full flex-col overflow-hidden transition duration-300 hover:-translate-y-1 hover:shadow-[0_18px_40px_-18px_rgba(8,44,31,0.35)]">
       <Link href={`/${lang}/produit/${p.id}`} className="relative block aspect-square overflow-hidden bg-brand-50">
         <ProductImage p={p} className={`transition duration-500 group-hover:scale-[1.06] ${out ? "opacity-50 grayscale" : ""}`} />
+        {!out && productImages(p)[1] && (
+          // 2e photo révélée au survol (ordinateur)
+          // eslint-disable-next-line @next/next/no-img-element
+          <img
+            src={productImages(p)[1]}
+            alt=""
+            loading="lazy"
+            className="absolute inset-0 h-full w-full object-cover opacity-0 transition duration-500 group-hover:scale-[1.06] group-hover:opacity-100"
+          />
+        )}
         {off > 0 && (
           <span dir="ltr" className="gold-shine absolute start-3 top-3 rounded-full bg-promo px-2.5 py-1 text-xs font-bold text-white shadow">
             -{off}%

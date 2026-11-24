@@ -45,7 +45,7 @@ const ProductSchema = z.object({
   price: z.preprocess((v) => Number(String(v).replace(/\s/g, "")), z.number("Prix invalide.").int("Prix invalide.").min(0)),
   compare_at_price: intOrNull,
   stock: z.preprocess((v) => Number(String(v || 0).replace(/\s/g, "")), z.number().int().min(0, "Stock invalide.")),
-  image_url: z.string().trim().max(1000),
+  images: z.array(z.string().trim().regex(/^https:\/\//, "Chaque lien d'image doit commencer par https://").max(1000)).max(10, "10 photos maximum."),
   active: z.boolean(),
   featured: z.boolean(),
   promo_ends_at: z.preprocess(
@@ -67,7 +67,13 @@ export async function saveProduct(_: string | null, form: FormData): Promise<str
     price: form.get("price"),
     compare_at_price: form.get("compare_at_price"),
     stock: form.get("stock"),
-    image_url: form.get("image_url") ?? "",
+    images: (() => {
+      try {
+        return JSON.parse(String(form.get("images") || "[]"));
+      } catch {
+        return [];
+      }
+    })(),
     active: form.get("active") === "on",
     featured: form.get("featured") === "on",
     promo_ends_at: form.get("promo_ends_at") || null,
@@ -75,7 +81,6 @@ export async function saveProduct(_: string | null, form: FormData): Promise<str
   if (!parsed.success) return parsed.error.issues[0]?.message ?? "Formulaire invalide.";
   const data = parsed.data;
 
-  if (data.image_url && !/^https:\/\//.test(data.image_url)) return "Le lien de l'image doit commencer par https://";
   if (data.compare_at_price !== null && data.compare_at_price <= data.price) {
     return "Le prix barré doit être supérieur au prix de vente (ou laissé vide).";
   }
@@ -84,24 +89,15 @@ export async function saveProduct(_: string | null, form: FormData): Promise<str
   }
   if (data.promo_ends_at && Number.isNaN(data.promo_ends_at.getTime())) return "Date de fin de promo invalide.";
 
-  const file = form.get("image");
-  if (file instanceof File && file.size > 0) {
-    if (!storageEnabled()) return "L'envoi de photos n'est pas configuré : colle plutôt un lien d'image.";
-    try {
-      data.image_url = await uploadProductImage(file);
-    } catch (e) {
-      console.error("uploadProductImage", e);
-      return `Photo : ${(e as Error).message}`;
-    }
-  }
-
   try {
     await ensureSchema();
     const sql = db();
+    const { images, ...fields } = data;
+    const row = { ...fields, image_url: images[0] ?? "", images: sql.array(images) };
     if (id > 0) {
-      await sql`update products set ${sql(data)}, updated_at = now() where id = ${id}`;
+      await sql`update products set ${sql(row)}, updated_at = now() where id = ${id}`;
     } else {
-      await sql`insert into products ${sql(data)}`;
+      await sql`insert into products ${sql(row)}`;
     }
   } catch (e) {
     console.error("saveProduct", e);
@@ -109,6 +105,20 @@ export async function saveProduct(_: string | null, form: FormData): Promise<str
   }
   revalidatePath("/", "layout");
   return "ok";
+}
+
+/** Envoie une photo (déjà réduite par le navigateur) et renvoie son adresse. */
+export async function uploadImage(form: FormData): Promise<{ url: string } | { error: string }> {
+  await requireAdmin();
+  const file = form.get("file");
+  if (!(file instanceof File) || file.size === 0) return { error: "Aucun fichier reçu." };
+  if (!storageEnabled()) return { error: "L'envoi de photos n'est pas configuré : colle plutôt un lien d'image." };
+  try {
+    return { url: await uploadProductImage(file) };
+  } catch (e) {
+    console.error("uploadImage", e);
+    return { error: (e as Error).message };
+  }
 }
 
 export async function toggleProduct(form: FormData) {

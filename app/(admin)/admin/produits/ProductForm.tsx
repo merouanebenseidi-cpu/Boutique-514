@@ -4,16 +4,13 @@ import { useRouter } from "next/navigation";
 import { useActionState, useEffect, useState } from "react";
 import { CATEGORIES } from "@/lib/i18n";
 import type { Product } from "@/lib/types";
-import { resizeImage } from "@/lib/resizeImage";
+import { productImages } from "@/lib/productImages";
 import { saveProduct } from "../actions";
+import { PhotoManager } from "./PhotoManager";
 
 export function ProductForm({ product, uploads }: { product?: Product; uploads: boolean }) {
   const router = useRouter();
   const [error, action, pending] = useActionState(async (prev: string | null, form: FormData) => {
-    const file = form.get("image");
-    if (file instanceof File && file.size > 3.5 * 1024 * 1024) {
-      return `Photo trop lourde (${(file.size / 1024 / 1024).toFixed(1)} Mo) : choisis une image plus petite ou fais-en une capture d'écran.`;
-    }
     try {
       const res = await saveProduct(prev, form);
       if (res === "ok") {
@@ -28,8 +25,7 @@ export function ProductForm({ product, uploads }: { product?: Product; uploads: 
       return `Erreur pendant l'envoi : ${(e as Error)?.message || String(e)}. Vérifie ta connexion et réessaie ; si ça continue, envoie une capture de ce message.`;
     }
   }, null);
-  const [preview, setPreview] = useState(product?.image_url ?? "");
-  const [fileName, setFileName] = useState("");
+  // Vrai pendant l'envoi des photos : empêche d'enregistrer avant la fin.
   const [resizing, setResizing] = useState(false);
   // Date de fin affichée dans le fuseau de l'appareil (calculée après le montage pour éviter un décalage serveur/navigateur).
   const [promoLocal, setPromoLocal] = useState("");
@@ -106,54 +102,7 @@ export function ProductForm({ product, uploads }: { product?: Product; uploads: 
         </div>
       </section>
 
-      <section className="card space-y-4 p-4">
-        <h2 className="font-semibold">Photo</h2>
-        <div className="flex flex-wrap items-start gap-4">
-          <div className="size-32 shrink-0 overflow-hidden rounded-xl bg-gray-100">
-            {preview ? (
-              // eslint-disable-next-line @next/next/no-img-element
-              <img src={preview} alt="" className="h-full w-full object-cover" />
-            ) : (
-              <span className="flex h-full items-center justify-center text-4xl">📦</span>
-            )}
-          </div>
-          <div className="min-w-60 flex-1 space-y-3">
-            {uploads && (
-              <div className="space-y-1.5">
-                <label className="btn-primary cursor-pointer px-6 py-3">
-                  📷 {fileName ? "Changer de photo" : "Choisir une photo"}
-                  <input
-                    name="image"
-                    type="file"
-                    accept="image/*"
-                    className="sr-only"
-                    onChange={async (e) => {
-                      const input = e.target;
-                      const original = input.files?.[0];
-                      if (!original) return;
-                      setFileName("Préparation de la photo…");
-                      setResizing(true);
-                      const small = await resizeImage(original);
-                      // Remplace le fichier choisi par la version réduite.
-                      const dt = new DataTransfer();
-                      dt.items.add(small);
-                      input.files = dt.files;
-                      setResizing(false);
-                      setFileName(`${original.name} · ${(small.size / 1024 / 1024).toFixed(1)} Mo`);
-                      setPreview(URL.createObjectURL(small));
-                    }}
-                  />
-                </label>
-                <p className="text-sm text-gray-500">{fileName || "JPG, PNG ou WebP · 4 Mo maximum"}</p>
-              </div>
-            )}
-            <label className="block">
-              <span className="label">{uploads ? "… ou coller un lien d'image" : "Lien de l'image (https://…)"}</span>
-              <input name="image_url" defaultValue={product?.image_url} className="input" dir="ltr" onChange={(e) => setPreview(e.target.value)} />
-            </label>
-          </div>
-        </div>
-      </section>
+      <PhotoManager initial={productImages(product ?? { image_url: "", images: [] })} uploads={uploads} onBusyChange={setResizing} />
 
       <section className="card flex flex-wrap gap-6 p-4">
         <label className="flex items-center gap-2">
@@ -169,7 +118,7 @@ export function ProductForm({ product, uploads }: { product?: Product; uploads: 
       {error && <p role="alert" className="rounded-xl bg-red-50 p-3 font-medium text-promo">{error}</p>}
 
       <button className="btn-primary px-8" disabled={pending || resizing}>
-        {pending ? "Enregistrement…" : "Enregistrer"}
+        {pending ? "Enregistrement…" : resizing ? "Envoi des photos…" : "Enregistrer"}
       </button>
     </form>
   );
