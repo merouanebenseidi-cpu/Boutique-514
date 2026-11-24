@@ -4,6 +4,7 @@ import Link from "next/link";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { DICTS, formatDA, type Lang } from "@/lib/i18n";
+import { Biosphere } from "./Biosphere";
 import { Countdown } from "./Countdown";
 
 export type HeroSlide = {
@@ -81,10 +82,8 @@ export function HeroCarousel({ slides, lang }: { slides: HeroSlide[]; lang: Lang
             </a>
           </div>
           <div className="relative hidden aspect-square w-full max-w-sm justify-self-center md:block">
-            <div className="absolute inset-6 animate-float rounded-[2rem] bg-gradient-to-br from-gold-300 to-gold-500 opacity-90" />
-            <div className="absolute inset-0 flex items-center justify-center">
-              <span className="font-display text-[7rem] font-bold text-brand-950/90">514</span>
-            </div>
+            <div className="absolute inset-10 rounded-full bg-gold-400/15 blur-2xl" />
+            <Biosphere className="relative size-full animate-float text-gold-300" />
           </div>
         </Slide>
 

@@ -68,6 +68,18 @@ Chaque modification poussée sur la branche `main` redéploie le site automatiqu
 - **Catégories** : définies dans `lib/i18n.ts` (`CATEGORIES`).
 - **Textes du site** (FR et AR) : `lib/i18n.ts`.
 
+## Logo
+Emblème « Biosphère » (le dôme géodésique de Montréal) + « BOUTIQUE 514 » en Cormorant Garamond
++ signature « MONTRÉAL · ALGER ». Couleurs : vert `#082c1f`, or `#d9b45a`, crème `#faf7f0`.
+- Composant du site : `components/Biosphere.tsx` (variantes `full` et `icon`)
+- Icône de l'onglet : `app/icon.svg` ; icône iPhone : `app/apple-icon.png`
+- Fichiers à télécharger (aussi accessibles sur le site à `/brand/…`) : `public/brand/`
+  - `logo-boutique514-clair.png` (fond transparent, pour fonds clairs)
+  - `logo-boutique514-fonce.png` (fond transparent, pour fonds sombres)
+  - `logo-boutique514-fond-vert.png`
+  - `icone-boutique514-vert-1080.png` / `icone-boutique514-creme-1080.png` (photo de profil, Chargily)
+  - `biosphere-vert.svg` / `biosphere-or.svg` (emblème seul, vectoriel)
+
 ## Garder Supabase actif
 Un projet Supabase gratuit se met en pause après une semaine sans activité. Sur Vercel, `vercel.json`
 appelle chaque jour `/api/keepalive`, qui fait une petite requête à la base. Ajoute une variable

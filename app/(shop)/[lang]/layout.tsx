@@ -1,9 +1,10 @@
 import "../../globals.css";
 import type { Metadata, Viewport } from "next";
-import { Cairo, Playfair_Display } from "next/font/google";
+import { Cairo, Cormorant_Garamond, Playfair_Display } from "next/font/google";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { MessageCircle } from "lucide-react";
+import { Biosphere } from "@/components/Biosphere";
 import { CartProvider } from "@/components/CartProvider";
 import { CategoryIcon } from "@/components/CategoryIcon";
 import { CartLink, HeaderShadow, LangSwitch } from "@/components/HeaderClient";
@@ -12,6 +13,7 @@ import { CATEGORIES, DICTS, isLang, LANGS } from "@/lib/i18n";
 export const dynamic = "force-dynamic";
 
 const cairo = Cairo({ subsets: ["arabic", "latin"], weight: ["400", "500", "600", "700", "800"], variable: "--font-cairo", display: "swap" });
+const cormorant = Cormorant_Garamond({ subsets: ["latin"], weight: ["500", "600"], variable: "--font-cormorant", display: "swap" });
 const playfair = Playfair_Display({ subsets: ["latin"], weight: ["600", "700"], variable: "--font-playfair", display: "swap" });
 
 const SHOP = process.env.NEXT_PUBLIC_SHOP_NAME || "Boutique 514";
@@ -28,16 +30,21 @@ export async function generateMetadata({ params }: { params: Promise<{ lang: str
 
 export const viewport: Viewport = { themeColor: "#082c1f", width: "device-width", initialScale: 1 };
 
-function Logo({ lang }: { lang: string }) {
-  const [first, ...rest] = SHOP.split(" ");
+/** Logo : emblème « Biosphère » + « BOUTIQUE 514 » + signature « MONTRÉAL · ALGER ». */
+function Logo({ lang, tone = "light" }: { lang: string; tone?: "light" | "dark" }) {
+  const dark = tone === "dark";
   return (
-    <Link href={`/${lang}`} className="group flex items-baseline gap-1.5" dir="ltr">
-      <span className="font-display text-2xl font-bold tracking-tight text-brand-950">{first}</span>
-      {rest.length > 0 && (
-        <span className="rounded-md bg-gold-400 px-1.5 text-lg font-extrabold text-brand-950 transition group-hover:bg-gold-300">
-          {rest.join(" ")}
+    <Link href={`/${lang}`} className="group flex items-center gap-2.5 sm:gap-3" dir="ltr" aria-label={SHOP}>
+      <Biosphere variant="icon" className={`size-9 shrink-0 transition duration-500 group-hover:rotate-[8deg] sm:size-11 ${dark ? "text-gold-300" : "text-brand-800"}`} />
+      <span className="leading-none">
+        <span className={`block font-logo text-lg font-semibold tracking-[0.1em] whitespace-nowrap sm:text-2xl sm:tracking-[0.14em] ${dark ? "text-white" : "text-brand-950"}`}>
+          {SHOP.toUpperCase()}
         </span>
-      )}
+        <span className={`mt-1 flex items-center gap-1.5 text-[0.55rem] font-semibold tracking-[0.3em] whitespace-nowrap sm:text-[0.6rem] sm:tracking-[0.38em] ${dark ? "text-gold-300" : "text-gold-600"}`}>
+          <span className="h-px w-4 bg-current" />
+          MONTRÉAL · ALGER
+        </span>
+      </span>
     </Link>
   );
 }
@@ -56,7 +63,7 @@ export default async function ShopLayout({
   const announce = [...t.announce, ...t.announce];
 
   return (
-    <html lang={lang} dir={lang === "ar" ? "rtl" : "ltr"} className={`${cairo.variable} ${playfair.variable}`}>
+    <html lang={lang} dir={lang === "ar" ? "rtl" : "ltr"} className={`${cairo.variable} ${playfair.variable} ${cormorant.variable}`}>
       <body className="min-h-screen font-sans antialiased">
         <CartProvider>
           {/* Bandeau d'annonces défilant */}
@@ -106,7 +113,7 @@ export default async function ShopLayout({
           <footer className="mt-16 bg-brand-950 text-brand-100">
             <div className="mx-auto grid max-w-6xl gap-10 px-4 py-12 sm:grid-cols-3">
               <div className="space-y-3">
-                <p className="font-display text-2xl font-bold text-white">{SHOP}</p>
+                <Logo lang={lang} tone="dark" />
                 <p className="text-sm leading-relaxed text-brand-200">{t.footerAbout}</p>
               </div>
               <div>

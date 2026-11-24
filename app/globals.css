@@ -27,6 +27,7 @@
 
   --font-sans: var(--font-cairo), system-ui, -apple-system, "Segoe UI", Tahoma, Arial, sans-serif;
   --font-display: var(--font-playfair), var(--font-cairo), Georgia, serif;
+  --font-logo: var(--font-cormorant), Georgia, serif;
 
   --animate-fade-up: fade-up 0.8s cubic-bezier(0.2, 0.7, 0.2, 1) both;
   --animate-marquee: marquee 28s linear infinite;
@@ -59,6 +60,10 @@ html {
 body {
   background: var(--color-cream);
   color: var(--color-ink);
+}
+
+.font-logo {
+  font-variant-numeric: lining-nums;
 }
 
 /* En arabe, les titres utilisent Cairo (Playfair n'a pas de glyphes arabes). */
