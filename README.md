@@ -68,6 +68,11 @@ Chaque modification poussée sur la branche `main` redéploie le site automatiqu
 - **Catégories** : définies dans `lib/i18n.ts` (`CATEGORIES`).
 - **Textes du site** (FR et AR) : `lib/i18n.ts`.
 
+## Garder Supabase actif
+Un projet Supabase gratuit se met en pause après une semaine sans activité. Sur Vercel, `vercel.json`
+appelle chaque jour `/api/keepalive`, qui fait une petite requête à la base. Ajoute une variable
+`CRON_SECRET` (suite de caractères au hasard) dans Vercel : seul Vercel pourra alors appeler cette adresse.
+
 ## Paiements en ligne (plus tard)
 Le code est prêt à les recevoir : modes `cib_edahabia` et `card_intl`, champs « cadeau » (acheteur à l'étranger,
 destinataire en Algérie) dans les commandes et le formulaire. Il reste à brancher les prestataires une fois les comptes ouverts :
