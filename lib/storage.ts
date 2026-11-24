@@ -1,5 +1,5 @@
 import "server-only";
-import { createClient } from "@supabase/supabase-js";
+import { createClient, type SupabaseClient } from "@supabase/supabase-js";
 import { randomUUID } from "node:crypto";
 import { cleanEnv, supabaseUrl } from "./env";
 
@@ -10,6 +10,15 @@ const ALLOWED: Record<string, string> = {
   "image/webp": "webp",
   "image/avif": "avif",
 };
+
+/** Crée l'espace de stockage public « produits » s'il n'existe pas encore. */
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+export async function ensureBucket(supabase: { storage: SupabaseClient<any, any, any>["storage"] }) {
+  const { data } = await supabase.storage.getBucket(BUCKET);
+  if (data) return;
+  const { error } = await supabase.storage.createBucket(BUCKET, { public: true });
+  if (error && !/already exists/i.test(error.message)) throw new Error(`Création du stockage impossible : ${error.message}`);
+}
 
 export function storageEnabled() {
   return Boolean(supabaseUrl() && cleanEnv(process.env.SUPABASE_SERVICE_ROLE_KEY));
@@ -25,6 +34,7 @@ export async function uploadProductImage(file: File): Promise<string> {
   const supabase = createClient(supabaseUrl()!, cleanEnv(process.env.SUPABASE_SERVICE_ROLE_KEY), {
     auth: { persistSession: false },
   });
+  await ensureBucket(supabase);
   const path = `${new Date().getFullYear()}/${randomUUID()}.${ext}`;
   const { error } = await supabase.storage.from(BUCKET).upload(path, file, { contentType: file.type });
   if (error) throw new Error(`Échec de l'envoi de la photo : ${error.message}`);

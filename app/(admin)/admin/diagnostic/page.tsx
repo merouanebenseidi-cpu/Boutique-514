@@ -1,6 +1,7 @@
 import postgres from "postgres";
 import { createClient } from "@supabase/supabase-js";
 import { requireAdmin } from "@/lib/auth";
+import { ensureBucket } from "@/lib/storage";
 import { cleanEnv, supabaseUrlInfo } from "@/lib/env";
 
 export const dynamic = "force-dynamic";
@@ -110,6 +111,7 @@ async function testStorage(): Promise<Check[]> {
   };
   try {
     const supabase = createClient(url, key, { auth: { persistSession: false } });
+    await ensureBucket(supabase); // crée le stockage « produits » s'il manque
     const { data, error } = await supabase.storage.getBucket("produits");
     if (error) {
       return [urlCheck, { label: "Stockage des photos", ok: false, detail: `${error.message} → vérifie la clé secrète (secret / service_role, pas anon) et relance db/supabase-setup.sql.` }];
