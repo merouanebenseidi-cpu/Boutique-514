@@ -1,9 +1,9 @@
-// Liste des 58 wilayas avec tarifs de livraison PAR DÉFAUT (en DA).
+// Liste des 69 wilayas (loi n° 26-06 du 4 avril 2026) avec tarifs de livraison PAR DÉFAUT (en DA).
 // Ces tarifs sont indicatifs : ajuste-les dans l'admin (Livraison) selon ton transporteur.
 // Une wilaya peut aussi être ajoutée depuis l'admin.
 
-const SOUTH = new Set([1, 8, 11, 30, 33, 37, 39, 47, 49, 50, 52, 53, 54, 55, 56, 57, 58]);
-const HIGHLANDS = new Set([3, 17, 32, 45, 51]);
+const SOUTH = new Set([1, 8, 11, 30, 33, 37, 39, 47, 49, 50, 52, 53, 54, 55, 56, 57, 58, 69]);
+const HIGHLANDS = new Set([3, 17, 32, 45, 51, 59, 63, 64, 65, 66, 68]);
 
 function rates(code) {
   if (code === 16) return [400, 300];
@@ -71,6 +71,18 @@ const LIST = [
   [56, "Djanet", "جانت"],
   [57, "El M'Ghair", "المغير"],
   [58, "El Meniaa", "المنيعة"],
+  // 11 wilayas créées en 2025 (numérotation de la loi n° 26-06 du 4 avril 2026)
+  [59, "Aflou", "آفلو"],
+  [60, "Barika", "بريكة"],
+  [61, "El Kantara", "القنطرة"],
+  [62, "Bir El Ater", "بئر العاتر"],
+  [63, "El Aricha", "العريشة"],
+  [64, "Ksar Chellala", "قصر الشلالة"],
+  [65, "Aïn Oussara", "عين وسارة"],
+  [66, "Messaad", "مسعد"],
+  [67, "Ksar El Boukhari", "قصر البخاري"],
+  [68, "Bou Saâda", "بوسعادة"],
+  [69, "El Abiodh Sidi Cheikh", "الأبيض سيدي الشيخ"],
 ];
 
 export const WILAYAS = LIST.map(([code, name_fr, name_ar]) => {

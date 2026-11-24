@@ -39,7 +39,7 @@ npm install
 cp .env.example .env.local   # puis remplis DATABASE_URL dans .env.local
 npm run db:setup             # ou `npm run db:demo` pour ajouter 6 produits d'exemple
 ```
-La commande crée les tables, les 58 wilayas avec des tarifs indicatifs et l'espace de stockage des photos.
+La commande crée les tables, les 69 wilayas avec des tarifs indicatifs et l'espace de stockage des photos.
 On peut la relancer sans risque.
 
 ### 3. Hébergement : Vercel (gratuit)
