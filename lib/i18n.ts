@@ -21,6 +21,13 @@ export function categoryName(slug: string, lang: Lang) {
 }
 
 const fr = {
+  cibHint: "Paiement sécurisé par Chargily. Vous serez redirigé vers la page de paiement.",
+  payNow: "Payer",
+  paymentConfirmed: "Paiement reçu ✓",
+  paymentPending: "Nous confirmons votre paiement, cela prend quelques instants.",
+  paymentFailedTitle: "Le paiement n'a pas abouti",
+  paymentFailedText: "Votre commande a été annulée et aucun montant n'a été débité. Vous pouvez réessayer ou choisir le paiement à la livraison.",
+  retryOrder: "Retour à la boutique",
   announce: ["Livraison dans les 58 wilayas", "Paiement à la livraison", "Commande confirmée par téléphone"],
   trust: [
     ["Livraison 58 wilayas", "À domicile ou au bureau du livreur"],
@@ -111,10 +118,18 @@ const fr = {
     payment: "Ce mode de paiement n'est pas encore disponible.",
     sender: "Indiquez votre nom et votre e-mail.",
     generic: "Une erreur est survenue. Réessayez.",
+    onlinePayment: "Le paiement par carte est momentanément indisponible. Choisissez le paiement à la livraison ou réessayez plus tard.",
   },
 };
 
 const ar: typeof fr = {
+  cibHint: "دفع آمن عبر Chargily. سيتم تحويلك إلى صفحة الدفع.",
+  payNow: "ادفع",
+  paymentConfirmed: "تم استلام الدفع ✓",
+  paymentPending: "نحن نؤكد دفعتك، يستغرق ذلك لحظات.",
+  paymentFailedTitle: "لم تتم عملية الدفع",
+  paymentFailedText: "تم إلغاء طلبك ولم يتم خصم أي مبلغ. يمكنك المحاولة مجددًا أو اختيار الدفع عند الاستلام.",
+  retryOrder: "العودة إلى المتجر",
   announce: ["التوصيل إلى 58 ولاية", "الدفع عند الاستلام", "تأكيد الطلب عبر الهاتف"],
   trust: [
     ["التوصيل إلى 58 ولاية", "إلى المنزل أو مكتب التوصيل"],
@@ -205,6 +220,7 @@ const ar: typeof fr = {
     payment: "طريقة الدفع هذه غير متاحة بعد.",
     sender: "أدخل اسمك وبريدك الإلكتروني.",
     generic: "حدث خطأ. حاول مرة أخرى.",
+    onlinePayment: "الدفع بالبطاقة غير متاح مؤقتًا. اختر الدفع عند الاستلام أو حاول لاحقًا.",
   },
 };
 

@@ -1,4 +1,5 @@
 import "server-only";
+import { chargilyEnabled } from "./chargily";
 
 /**
  * Modes de paiement. Seul le paiement à la livraison est actif pour l'instant.
@@ -15,13 +16,13 @@ export type PaymentMethod = "cod" | "cib_edahabia" | "card_intl";
 
 const INTEGRATED: Record<PaymentMethod, boolean> = {
   cod: true,
-  cib_edahabia: false, // TODO : intégration Chargily Pay
+  cib_edahabia: true, // Chargily Pay (lib/chargily.ts)
   card_intl: false, // TODO : intégration Stripe Checkout
 };
 
 export function enabledPaymentMethods(): PaymentMethod[] {
   const methods: PaymentMethod[] = ["cod"];
-  if (process.env.ENABLE_CHARGILY === "true" && INTEGRATED.cib_edahabia) methods.push("cib_edahabia");
+  if (chargilyEnabled() && INTEGRATED.cib_edahabia) methods.push("cib_edahabia");
   if (process.env.ENABLE_STRIPE_GIFT === "true" && INTEGRATED.card_intl) methods.push("card_intl");
   return methods;
 }

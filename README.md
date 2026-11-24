@@ -73,14 +73,27 @@ Un projet Supabase gratuit se met en pause après une semaine sans activité. Su
 appelle chaque jour `/api/keepalive`, qui fait une petite requête à la base. Ajoute une variable
 `CRON_SECRET` (suite de caractères au hasard) dans Vercel : seul Vercel pourra alors appeler cette adresse.
 
-## Paiements en ligne (plus tard)
-Le code est prêt à les recevoir : modes `cib_edahabia` et `card_intl`, champs « cadeau » (acheteur à l'étranger,
-destinataire en Algérie) dans les commandes et le formulaire. Il reste à brancher les prestataires une fois les comptes ouverts :
-- **CIB / Edahabia** via Chargily Pay : compte marchand vérifié (statut légal en Algérie requis).
-- **Carte internationale** via Stripe pour « offrir depuis l'étranger » : compte Stripe dans ton pays de résidence.
-  Avant d'activer cette option, vois avec un comptable comment rapatrier l'argent et déclarer ces ventes.
+## Paiement CIB / Edahabia (Chargily Pay)
+Déjà intégré : il suffit d'ajouter la variable `CHARGILY_SECRET_KEY` et de relancer une mise en ligne.
+L'option « Carte CIB / Edahabia » apparaît alors dans le formulaire de commande.
 
-Points d'entrée : `lib/payments.ts` et le `TODO` de `app/(shop)/[lang]/panier/actions.ts`.
+- **Tester sans argent réel** : crée un compte sur https://pay.chargily.com (Test Mode par défaut),
+  copie la clé secrète de test (`test_sk_…`) dans **Developers corner → API keys**.
+- **Vrais paiements** : fais vérifier ton compte et ton application par Chargily, puis remplace la clé
+  par la clé live (`live_sk_…`). Le diagnostic (`/admin/diagnostic`) indique le mode actif.
+- Les frais Chargily sont à la charge de la boutique (le client paie exactement le total affiché) :
+  voir `chargily_pay_fees_allocation` dans `lib/chargily.ts`.
+- `ENABLE_CHARGILY=false` masque l'option sans retirer la clé.
+
+Fonctionnement : la commande est créée (stock réservé), le client est envoyé sur la page de paiement
+Chargily. Chargily prévient le site (`/api/chargily/webhook`, signature vérifiée) : payé → la commande
+est marquée « payé en ligne » ; échoué ou annulé → la commande est annulée et le stock remis.
+Une commande jamais payée est annulée automatiquement après 24 h (tâche quotidienne `/api/keepalive`).
+
+## « Offrir depuis l'étranger » (plus tard)
+Champs cadeau (acheteur à l'étranger, destinataire en Algérie) déjà prévus dans les commandes.
+Reste à brancher Stripe (`card_intl` dans `lib/payments.ts`). Avant d'activer cette option,
+vois avec un comptable comment rapatrier l'argent et déclarer ces ventes.
 
 ## Développement
 ```bash

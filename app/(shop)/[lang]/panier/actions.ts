@@ -2,7 +2,9 @@
 
 import { getProductsByIds } from "@/lib/catalog";
 import { DICTS, isLang, type Lang } from "@/lib/i18n";
-import { createOrder, OrderFailure, OrderInput } from "@/lib/orders";
+import { headers } from "next/headers";
+import { createCheckout } from "@/lib/chargily";
+import { cancelUnpaidOrder, createOrder, OrderFailure, OrderInput, setPaymentRef } from "@/lib/orders";
 import { enabledPaymentMethods } from "@/lib/payments";
 import type { CartProduct } from "@/lib/types";
 
@@ -20,7 +22,15 @@ export async function getCartProducts(ids: number[], lang: string): Promise<Cart
   }));
 }
 
-export type PlaceOrderResult = { ok: true; number: string } | { ok: false; error: string };
+export type PlaceOrderResult = { ok: true; number: string; redirect?: string } | { ok: false; error: string };
+
+/** Adresse publique du site (https://…), déduite de la requête. */
+async function siteOrigin() {
+  const h = await headers();
+  const host = h.get("x-forwarded-host") ?? h.get("host") ?? "localhost:3000";
+  const proto = h.get("x-forwarded-proto") ?? (host.startsWith("localhost") ? "http" : "https");
+  return `${proto}://${host}`;
+}
 
 export async function placeOrder(raw: unknown): Promise<PlaceOrderResult> {
   const lang: Lang = isLang((raw as { lang?: string })?.lang ?? "") ? (raw as { lang: Lang }).lang : "fr";
@@ -33,10 +43,29 @@ export async function placeOrder(raw: unknown): Promise<PlaceOrderResult> {
   }
 
   try {
-    // TODO paiements en ligne : si payment_method !== "cod", créer ici le paiement
-    // (Chargily Pay ou Stripe Checkout) et renvoyer l'URL de paiement au lieu du numéro.
-    const { number } = await createOrder(parsed.data, enabledPaymentMethods());
-    return { ok: true, number };
+    const order = await createOrder(parsed.data, enabledPaymentMethods());
+    if (parsed.data.payment_method !== "cib_edahabia") return { ok: true, number: order.number };
+
+    // Paiement CIB / Edahabia : création de la page de paiement Chargily.
+    try {
+      const origin = await siteOrigin();
+      const n = encodeURIComponent(order.number);
+      const checkout = await createCheckout({
+        amount: order.total,
+        orderNumber: order.number,
+        locale: lang,
+        successUrl: `${origin}/${lang}/merci?n=${n}&paiement=1`,
+        failureUrl: `${origin}/${lang}/paiement-echoue?n=${n}`,
+        webhookUrl: `${origin}/api/chargily/webhook`,
+      });
+      await setPaymentRef(order.id, checkout.id);
+      return { ok: true, number: order.number, redirect: checkout.checkout_url };
+    } catch (payErr) {
+      // Paiement impossible à créer : on annule la commande (le stock est remis).
+      console.error("chargily createCheckout", payErr);
+      await cancelUnpaidOrder(order.id).catch(() => {});
+      return { ok: false, error: e.onlinePayment };
+    }
   } catch (err) {
     if (err instanceof OrderFailure) {
       const d = err.detail;

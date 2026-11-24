@@ -119,10 +119,19 @@ export default async function OrderPage({ params }: { params: Promise<{ id: stri
           <dl className="mt-3 space-y-1 border-t border-gray-200 pt-3 text-sm">
             <div className="flex justify-between"><dt>Sous-total</dt><dd>{formatDA(o.subtotal, "fr")}</dd></div>
             <div className="flex justify-between"><dt>Livraison</dt><dd>{formatDA(o.shipping_price, "fr")}</dd></div>
-            <div className="flex justify-between text-base font-bold"><dt>Total à encaisser</dt><dd>{formatDA(o.total, "fr")}</dd></div>
+            <div className="flex justify-between text-base font-bold"><dt>{o.payment_status === "paid" ? "Total (déjà payé)" : "Total à encaisser"}</dt><dd>{formatDA(o.total, "fr")}</dd></div>
             <div className="flex justify-between text-gray-600">
               <dt>Paiement</dt>
-              <dd>{PAYMENT_LABELS[o.payment_method]} · {o.payment_status === "paid" ? "payé" : "non payé"}</dd>
+              <dd>
+                {PAYMENT_LABELS[o.payment_method]} ·{" "}
+                {o.payment_status === "paid"
+                  ? "payé en ligne ✓"
+                  : o.payment_status === "failed"
+                    ? "paiement échoué"
+                    : o.payment_method === "cod"
+                      ? "à encaisser à la livraison"
+                      : "paiement en attente"}
+              </dd>
             </div>
           </dl>
         </section>

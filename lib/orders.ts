@@ -143,7 +143,7 @@ export async function createOrder(input: OrderInput, allowedPayments: PaymentMet
       await tx`update products set stock = stock - ${qty}, updated_at = now() where id = ${product.id}`;
     }
 
-    return { number, total: subtotal + shipping };
+    return { id: order.id, number, total: subtotal + shipping };
   });
 }
 
@@ -162,4 +162,48 @@ export async function setOrderStatus(orderId: number, status: string) {
     }
     await tx`update orders set status = ${status} where id = ${orderId}`;
   });
+}
+
+/** Annule une commande dont le paiement en ligne n'a pas abouti (stock remis). */
+export async function cancelUnpaidOrder(orderId: number) {
+  await db()`update orders set payment_status = 'failed' where id = ${orderId} and payment_status <> 'paid'`;
+  await setOrderStatus(orderId, "annulee");
+}
+
+/** Enregistre la référence du paiement en ligne créé pour une commande. */
+export async function setPaymentRef(orderId: number, ref: string) {
+  await db()`update orders set payment_ref = ${ref} where id = ${orderId}`;
+}
+
+/**
+ * Résultat d'un paiement en ligne (notification Chargily).
+ * Payé : la commande reste « nouvelle », marquée payée.
+ * Échoué / annulé : la commande est annulée et le stock remis.
+ */
+export async function applyPaymentResult(ref: string, result: "paid" | "failed", amount?: number) {
+  await ensureSchema();
+  const sql = db();
+  const [o] = await sql<{ id: number; total: number; payment_status: string }[]>`
+    select id, total, payment_status from orders where payment_ref = ${ref}`;
+  if (!o) return "inconnue";
+  if (o.payment_status === "paid") return "déjà payée";
+  if (result === "paid") {
+    if (amount !== undefined && amount < o.total) return "montant incorrect";
+    await sql`update orders set payment_status = 'paid' where id = ${o.id}`;
+    return "payée";
+  }
+  await cancelUnpaidOrder(o.id);
+  return "annulée";
+}
+
+/** Annule les commandes payables en ligne jamais payées après `hours` heures (remet le stock). */
+export async function cancelStaleOnlineOrders(hours = 24) {
+  await ensureSchema();
+  const sql = db();
+  const stale = await sql<{ id: number }[]>`
+    select id from orders
+    where payment_method <> 'cod' and payment_status = 'pending' and status = 'nouvelle'
+      and created_at < now() - make_interval(hours => ${hours})`;
+  for (const o of stale) await cancelUnpaidOrder(o.id);
+  return stale.length;
 }

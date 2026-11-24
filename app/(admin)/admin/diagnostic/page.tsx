@@ -2,6 +2,7 @@ import postgres from "postgres";
 import { createClient } from "@supabase/supabase-js";
 import { requireAdmin } from "@/lib/auth";
 import { ensureBucket } from "@/lib/storage";
+import { chargilyEnabled, chargilyKey, chargilyTestMode, getBalance } from "@/lib/chargily";
 import { cleanEnv, supabaseUrlInfo } from "@/lib/env";
 
 export const dynamic = "force-dynamic";
@@ -132,6 +133,24 @@ async function testStorage(): Promise<Check[]> {
   }
 }
 
+async function testChargily(): Promise<Check[]> {
+  if (!chargilyKey()) {
+    return [{ label: "CIB / Edahabia", ok: null, detail: "Non configuré (ajoute CHARGILY_SECRET_KEY pour activer le paiement par carte)." }];
+  }
+  const mode: Check = {
+    label: "Mode",
+    ok: true,
+    detail: chargilyTestMode() ? "TEST (aucun argent réel)" : "RÉEL (vrais paiements)",
+  };
+  if (!chargilyEnabled()) return [mode, { label: "CIB / Edahabia", ok: null, detail: "Désactivé (ENABLE_CHARGILY=false)." }];
+  try {
+    await getBalance();
+    return [mode, { label: "Clé Chargily", ok: true, detail: "Acceptée : le paiement CIB / Edahabia est proposé aux clients." }];
+  } catch (e) {
+    return [mode, { label: "Clé Chargily", ok: false, detail: `${(e as Error).message} → vérifie CHARGILY_SECRET_KEY (clé secrète test_sk_… ou live_sk_…).` }];
+  }
+}
+
 export default async function Diagnostic() {
   await requireAdmin();
   const env: Check[] = [
@@ -157,6 +176,7 @@ export default async function Diagnostic() {
     ["Adresse de la base (DATABASE_URL)", await safe("Analyse de l'adresse", () => inspectDatabaseUrl(process.env.DATABASE_URL))],
     ["Test de la base", await safe("Connexion à la base", testDatabase)],
     ["Photos", await safe("Stockage des photos", testStorage)],
+    ["Paiement CIB / Edahabia (Chargily)", await safe("Chargily", testChargily)],
   ];
 
   return (

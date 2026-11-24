@@ -1,5 +1,6 @@
 import { db } from "@/lib/db";
 import { cleanEnv } from "@/lib/env";
+import { cancelStaleOnlineOrders } from "@/lib/orders";
 
 export const dynamic = "force-dynamic";
 
@@ -15,7 +16,9 @@ export async function GET(req: Request) {
   }
   try {
     await db()`select 1`;
-    return Response.json({ ok: true, at: new Date().toISOString() });
+    // Paiements en ligne commencés mais jamais terminés : annulés après 24 h (stock remis).
+    const cancelled = await cancelStaleOnlineOrders(24);
+    return Response.json({ ok: true, cancelled, at: new Date().toISOString() });
   } catch (e) {
     return Response.json({ ok: false, error: (e as Error).message }, { status: 500 });
   }

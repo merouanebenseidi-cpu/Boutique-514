@@ -92,7 +92,11 @@ export function CheckoutClient({
         lang,
         items: rows.map((r) => ({ id: r.id, qty: r.qty })),
       });
-      if (res.ok) {
+      if (res.ok && res.redirect) {
+        // Paiement en ligne : direction la page de paiement sécurisée.
+        clear();
+        window.location.assign(res.redirect);
+      } else if (res.ok) {
         clear();
         router.push(`/${lang}/merci?n=${encodeURIComponent(res.number)}`);
       } else {
@@ -234,6 +238,7 @@ export function CheckoutClient({
                 <span>
                   <span className="font-medium">{paymentLabel[m]}</span>
                   {m === "cod" && <span className="block text-sm text-gray-600">{t.codHint}</span>}
+                  {m === "cib_edahabia" && <span className="block text-sm text-gray-600">{t.cibHint}</span>}
                 </span>
               </label>
             ))}
@@ -246,7 +251,7 @@ export function CheckoutClient({
         )}
 
         <button type="submit" className="btn-primary w-full py-3.5 text-lg" disabled={pending}>
-          {pending ? t.sending : `${t.confirmOrder} · ${formatDA(total, lang)}`}
+          {pending ? t.sending : `${form.payment_method === "cib_edahabia" ? t.payNow : t.confirmOrder} · ${formatDA(total, lang)}`}
         </button>
       </form>
 

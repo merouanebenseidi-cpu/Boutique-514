@@ -14,6 +14,7 @@ type Row = {
   wilaya: string;
   total: number;
   payment_method: string;
+  payment_status: string;
   is_gift: boolean;
   created_at: Date;
 };
@@ -28,7 +29,7 @@ export default async function OrdersPage({ searchParams }: { searchParams: Promi
   const countOf = (s: string) => counts.find((c) => c.status === s)?.n ?? 0;
   const orders = await sql<Row[]>`
     select o.id, o.number, o.status, o.customer_name, o.phone, w.name_fr as wilaya, o.total,
-           o.payment_method, o.is_gift, o.created_at
+           o.payment_method, o.payment_status, o.is_gift, o.created_at
     from orders o join shipping_rates w on w.code = o.wilaya_code
     ${filter ? sql`where o.status = ${filter}` : sql``}
     order by o.created_at desc limit 200`;
@@ -85,7 +86,16 @@ export default async function OrdersPage({ searchParams }: { searchParams: Promi
                   </td>
                   <td className="p-3">{o.wilaya}</td>
                   <td className="whitespace-nowrap p-3 font-semibold">{formatDA(o.total, "fr")}</td>
-                  <td className="p-3">{PAYMENT_LABELS[o.payment_method]}</td>
+                  <td className="p-3">
+                    {PAYMENT_LABELS[o.payment_method]}
+                    {o.payment_method !== "cod" && (
+                      <span
+                        className={`ms-1.5 rounded-full px-2 py-0.5 text-xs font-semibold ${o.payment_status === "paid" ? "bg-green-100 text-green-800" : o.payment_status === "failed" ? "bg-red-100 text-red-800" : "bg-amber-100 text-amber-800"}`}
+                      >
+                        {o.payment_status === "paid" ? "payé" : o.payment_status === "failed" ? "échoué" : "en attente"}
+                      </span>
+                    )}
+                  </td>
                   <td className="p-3"><StatusBadge status={o.status} /></td>
                 </tr>
               ))}
